@@ -156,8 +156,8 @@ def _sort_nodes(graph):
     return nodes
 
 
+# TODO: handle the circular 0 - 360 degree comparison issue
 def _calculate_bearings(graph, nodes):
-    # TODO: handle the circular 0 - 360 degree comparison issue
     """
     Calculate the compass bearings for each sequential node paid in `nodes`.  Lat/lon coordinates are expected to be
     node attributes in `graph` named 'lat' and lon'.
@@ -210,7 +210,8 @@ def _diff_bearings(bearings, bearing_thresh=40):
 
     # id nodes to remove
     for n in node2bearing_diff:
-        if abs(n[1]) > bearing_thresh:
+        # controlling for differences on either side of 360
+        if min(abs(n[1]), abs(n[1]-360)) > bearing_thresh:
             kinked_nodes.append(n[0])
 
     return kinked_nodes
@@ -228,7 +229,6 @@ def identify_kinked_nodes(comp, bearing_thresh=40):
 
     Returns:
         list[str] of kinked nodes
-
     """
 
     # sort nodes in sequential order, a tour
@@ -414,38 +414,88 @@ def contract_edges(graph, edge_weight='weight'):
     return set(contracted_edges)
 
 
-def add_contracted_edges_to_graph(graph):
+def create_deduped_state_road_graph(graph_st, comps_dict, remove_comp_ids):
     """
-    Add contracted edges to a graph.  Note this will duplicate the true edges which are significantly more granular.
+    Creates a single graph with all state roads deduped of parallel one way roads with the same name
 
     Args:
-        graph (networkx graph): graph to add edges to
+        graph_st (networkx graph): with all state roads
+        comps_dict (dict): mapping from graph id to component (graph)
+        remove_comp_ids (list[int]): list of components (by id) to remove from `graph_st`.  These are the parallel one
+         way edges and nodes left without any incident edges.
 
     Returns:
-        `graph` augmented with contracted edges
+        NetworkX graph all state roads deduped for parallel one way roads
     """
 
-    graph_contracted = graph.copy()
-    for i, comp in enumerate(nx.connected_component_subgraphs(graph_contracted)):
-        for cc in contract_edges(comp):
+    graph_st_deduped = graph_st.copy()
+
+    # actually remove dupe oneway edges from g_st
+    comps2remove = list(itertools.chain(*remove_comp_ids.values()))
+    for cid in comps2remove:
+        comp = comps_dict[cid]
+        graph_st_deduped.remove_nodes_from(comp.nodes(), )
+
+    # remove nodes w no edges
+    remove_island_nodes = []
+    for node in graph_st_deduped.nodes():
+        if graph_st_deduped.degree(node) == 0:
+            remove_island_nodes.append(node)
+    graph_st_deduped.remove_nodes_from(remove_island_nodes)
+
+    return graph_st_deduped
+
+
+def create_contracted_edge_graph(graph, edge_weight):
+    """
+    Creates a fresh graph with contracted edges only.
+
+    Args:
+        graph (networkx graph): base graph
+        edge_weight (str): edge attribute for weight used in `contract_edges`
+
+    Returns:
+        networkx graph with contracted edges and nodes only
+    """
+
+    graph_contracted = nx.Graph()
+    for i, comp in enumerate(nx.connected_component_subgraphs(graph)):
+        for cc in contract_edges(comp, edge_weight):
             start_node, end_node, distance = cc
             street_name = list(comp.edges(data=True))[0][2]['name']  # grabbing arbitrary first row
+
             contracted_edge = {
                 'start_node': start_node,
                 'end_node': end_node,
                 'distance': distance,
                 'name': street_name,
                 'comp': i,
-                'required': 1
+                'required': 1,
+                'path': nx.dijkstra_path(graph, start_node, end_node, edge_weight)
             }
+
             graph_contracted.add_edge(start_node, end_node, **contracted_edge)
+
             graph_contracted.node[start_node]['comp'] = i
             graph_contracted.node[end_node]['comp'] = i
+            graph_contracted.node[start_node]['lat'] = graph.node[start_node]['lat']
+            graph_contracted.node[start_node]['lon'] = graph.node[start_node]['lon']
+            graph_contracted.node[end_node]['lat'] = graph.node[end_node]['lat']
+            graph_contracted.node[end_node]['lon'] = graph.node[end_node]['lon']
 
     return graph_contracted
 
 
 def shortest_paths_between_components(graph):
+    """
+    Calculate haversine distances for all possible combinations of cross-component node-pairs
+
+    Args:
+        graph (networkx graph): with contracted edges and nodes only.  Created from `create_contracted_edge_graph`.
+
+    Returns:
+        Dataframe with haversine distances all possible combinations of cross-component node-pairs
+    """
 
     # calculate nodes incident to contracted edges
     contracted_nodes = []
@@ -475,6 +525,22 @@ def shortest_paths_between_components(graph):
 
 
 def find_minimum_weight_edges_to_connect_components(dfsp, graph, edge_weight='distance', top=10):
+    """
+    Given a dataframe of haversine distances between many pairs of nodes, calculate the min weight way to connect all
+    the components in `graph`.  At each iteration, the true shortest path (dijkstra_path_length) is calculated for the
+     top `top` closest node pairs using haversine distance.  This heuristic improves efficiency at the cost of
+     potentially not finding the true min weight connectors.  If this is a concern, increase `top`.
+
+    Args:
+        dfsp (dataframe): calculated with `shortest_paths_between_components` with haversine distance between all node
+                          candidate node pairs
+        graph (networkx graph): used for the true shortest path calculation
+        edge_weight (str): edge attribute used shortest path calculation in `graph`
+        top (int): number of pairs for which shortest path calculation is performed at each iteration
+
+    Returns:
+        list[tuple3] containing just the connectors needed to connect all the components in `graph`.
+    """
 
     # find shortest edges to add to make one big connected component
     dfsp = dfsp.copy()
@@ -483,12 +549,18 @@ def find_minimum_weight_edges_to_connect_components(dfsp, graph, edge_weight='di
 
         # calculate path distance for top 10 shortest
         dfsp['path_distance'] = None
+        dfsp['path'] = dfsp['path2'] = [[]] * len(dfsp)
+
         for i in dfsp.index[dfsp['start_comp'] != dfsp['end_comp']][0:top]:
             if dfsp.iloc[i]['path_distance'] is None:
                 dfsp.loc[i, 'path_distance'] = nx.dijkstra_path_length(graph,
                                                                        dfsp.loc[i, 'start_node'],
                                                                        dfsp.loc[i, 'end_node'],
                                                                        edge_weight)
+                dfsp.set_value(i, 'path', nx.dijkstra_path(graph,
+                                                           dfsp.loc[i, 'start_node'],
+                                                           dfsp.loc[i, 'end_node'],
+                                                           edge_weight))
         dfsp.sort_values('path_distance', inplace=True)
 
         # find first index where start and end comps are different
@@ -498,16 +570,63 @@ def find_minimum_weight_edges_to_connect_components(dfsp, graph, edge_weight='di
         start_node = dfsp.loc[first_index]['start_node']
         end_node = dfsp.loc[first_index]['end_node']
         path_distance = dfsp.loc[first_index]['path_distance']
+        path = dfsp.loc[first_index]['path']
 
         # update dfsp
         dfsp.loc[dfsp['end_comp'] == end_comp, 'end_comp'] = start_comp
         dfsp.loc[dfsp['start_comp'] == end_comp, 'start_comp'] = start_comp
         dfsp.sort_values('haversine_distance', inplace=True)
-        new_required_edges.append((start_node, end_node, path_distance))
+        new_required_edges.append((start_node, end_node, {'distance': path_distance, 'path': path}))
 
     return new_required_edges
 
 
+def create_rpp_edgelist(g_st_contracted, graph_full, edge_weight='distance', max_distance=1600):
+    """
+    Create the edgelist for the RPP algorithm.  This includes:
+     - Required state edges (deduped)
+     - Required non-state roads that connect state roads into one connected component with minimum additional distance
+     - Optional roads that connect the nodes of the contracted state edges (these distances are calculated here using
+       first haversine distance to filter the candidate set down using `max_distance` as a threshold, then calculating
+       the true shortest path distance)
+    Args:
+        g_st_contracted (networkx Graph): of contracted state roads only created from `create_contracted_edge_graph`
+        graph_full (networkx Graph): full graph with all granular edges
+        edge_weight (str): edge attribute for distance in `g_st_contracted` and `graph_full`
+        max_distance (int): max haversine distance used to add candidate optional edges for.
 
+    Returns:
+        Dataframe of edgelist described above.
+    """
+
+    dfrpp_list = []
+    for n1, n2 in [comb for comb in itertools.combinations(g_st_contracted.nodes(), 2)]:
+        if n1 == n2:
+            continue
+
+        distance_haversine = haversine(g_st_contracted.node[n1]['lon'], g_st_contracted.node[n1]['lat'],
+                                       g_st_contracted.node[n2]['lon'], g_st_contracted.node[n2]['lat'])
+        required = 1 if g_st_contracted.has_edge(n1, n2) else 0
+
+        # only add optional edges whose haversine distance is less than `max_distance`
+        if (distance_haversine > max_distance) and (required == 0):
+            continue
+
+        dfrpp_list.append({
+            'start_node': n1,
+            'end_node': n2,
+            'distance_haversine': distance_haversine,
+            'required': required,
+            'distance': g_st_contracted[n1][n2]['distance'] if required else nx.dijkstra_path_length(graph_full, n1, n2, edge_weight),
+            'path': g_st_contracted[n1][n2]['path'] if required else nx.dijkstra_path(graph_full, n1, n2, edge_weight)
+        })
+
+    # create dataframe
+    dfrpp = pd.DataFrame(dfrpp_list)
+
+    # create order
+    dfrpp = dfrpp[['start_node', 'end_node', 'distance_haversine', 'distance', 'required', 'path']]
+
+    return dfrpp
 
 
