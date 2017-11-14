@@ -18,9 +18,9 @@ def states_to_state_avenue_name(state_list):
     Returns:
         list of state avenue names w quadrant
     """
-    state_avenue = ['%s Avenue'%state for state in state_list]
+    state_avenue = ['{} Avenue'.format(state) for state in state_list]
     quadrant = ['Southeast', 'Southwest', 'Northeast', 'Northwest']
-    state_avenue_quadrant = ['%s %s'%(state_ave, quad) for state_ave in state_avenue for quad in quadrant]
+    state_avenue_quadrant = ['{} {}'.format(state_ave, quad) for state_ave in state_avenue for quad in quadrant]
     return state_avenue_quadrant
 
 
@@ -211,7 +211,7 @@ def _diff_bearings(bearings, bearing_thresh=40):
     # id nodes to remove
     for n in node2bearing_diff:
         # controlling for differences on either side of 360
-        if min(abs(n[1]), abs(n[1]-360)) > bearing_thresh:
+        if min(abs(n[1]), abs(n[1] - 360)) > bearing_thresh:
             kinked_nodes.append(n[0])
 
     return kinked_nodes
@@ -271,7 +271,7 @@ def create_unkinked_connected_components(comps, bearing_thresh):
         comp_edge = list(comp.edges(data=True))[0]  # just take first edge
 
         # adding road name.  Removing the last
-        comp.graph['name'] = comp_edge[2]['state'] if 'name' in comp_edge[2] else 'unnamed_road_%s' % (str(i))
+        comp.graph['name'] = comp_edge[2]['state'] if 'name' in comp_edge[2] else 'unnamed_road_{}'.format(str(i))
         comp.graph['id'] = i
 
     return comps_unkinked
@@ -296,7 +296,8 @@ def nodewise_distance_connected_components(comps):
         matches[comp.graph['name']][comp.graph['id']] = dict()
 
         # candidate components are those with the same street name (possible contenders for parallel edges)
-        candidate_comps = [cand for cand in comps if comp.graph['name'] == cand.graph['name'] and comp.graph['id'] != cand.graph['id']]
+        candidate_comps = [cand for cand in comps if
+                           comp.graph['name'] == cand.graph['name'] and comp.graph['id'] != cand.graph['id']]
 
         # check distance from every node in comp to closest corresponding node in each cand.
         for cand in candidate_comps:
@@ -307,7 +308,8 @@ def nodewise_distance_connected_components(comps):
 
                 for n2 in cand.nodes():
                     pt_closest_cands.append(
-                        haversine(comp.nodes[n1]['lon'], comp.nodes[n1]['lat'], cand.nodes[n2]['lon'], cand.nodes[n2]['lat'])
+                        haversine(comp.nodes[n1]['lon'], comp.nodes[n1]['lat'], cand.nodes[n2]['lon'],
+                                  cand.nodes[n2]['lat'])
                     )
                 # calculate distance to the closest node in candidate component to n1 (from starting component)
                 cand_pt_closest_cands.append(min(pt_closest_cands))
@@ -386,6 +388,7 @@ def contract_edges(graph, edge_weight='weight'):
     """
     Given a graph, contract edges into a list of contracted edges.  Nodes with degree 2 are collapsed into an edge
     stretching from a dead-end node (degree 1) or intersection (degree >= 3) to another like node.
+
     Args:
         graph (networkx graph):
         edge_weight (str): edge weight attribute to us for shortest path calculations
@@ -557,10 +560,10 @@ def find_minimum_weight_edges_to_connect_components(dfsp, graph, edge_weight='di
                                                                        dfsp.loc[i, 'start_node'],
                                                                        dfsp.loc[i, 'end_node'],
                                                                        edge_weight)
-                dfsp.set_value(i, 'path', nx.dijkstra_path(graph,
-                                                           dfsp.loc[i, 'start_node'],
-                                                           dfsp.loc[i, 'end_node'],
-                                                           edge_weight))
+                dfsp.at[i, 'path'] = nx.dijkstra_path(graph,
+                                                      dfsp.loc[i, 'start_node'],
+                                                      dfsp.loc[i, 'end_node'],
+                                                      edge_weight)
         dfsp.sort_values('path_distance', inplace=True)
 
         # find first index where start and end comps are different
@@ -628,5 +631,3 @@ def create_rpp_edgelist(g_st_contracted, graph_full, edge_weight='distance', max
     dfrpp = dfrpp[['start_node', 'end_node', 'distance_haversine', 'distance', 'required', 'path']]
 
     return dfrpp
-
-
