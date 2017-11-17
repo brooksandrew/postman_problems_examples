@@ -2,9 +2,10 @@ import itertools
 import networkx as nx
 import numpy as np
 import pandas as pd
-from compass_bearing import calculate_initial_compass_bearing
 from copy import deepcopy
 from collections import defaultdict
+
+from compass_bearing import calculate_initial_compass_bearing
 from osm2nx import haversine
 
 
@@ -382,41 +383,6 @@ def calculate_redundant_components(comp_overlap, thresh_pct=0.85):
     return remove_comps, keep_comps
 
 
-# TODO: implement smarter handling of degree 2 nodes that form loops.  Currently they're ignored.
-# TODO: should also save the route between the contracted nodes so that we can reconstruct and visualize it later
-def contract_edges(graph, edge_weight='weight'):
-    """
-    Given a graph, contract edges into a list of contracted edges.  Nodes with degree 2 are collapsed into an edge
-    stretching from a dead-end node (degree 1) or intersection (degree >= 3) to another like node.
-
-    Args:
-        graph (networkx graph):
-        edge_weight (str): edge weight attribute to us for shortest path calculations
-
-    Returns:
-        List of tuples representing contracted edges
-    """
-
-    # keep nodes represent dead-ends (degree 1) or intersections w > 2 nodes.
-    keep_nodes = [n for n in graph.nodes() if graph.degree(n) != 2]
-    contracted_edges = []
-
-    for n1 in keep_nodes:
-        for n2 in set(keep_nodes) - {n1}:
-            # TODO: this will overwrite parallel edges... check if we really want to do this.
-            if {n1, n2} in [{x[0], x[1]} for x in contracted_edges]:
-                continue
-            sp = nx.dijkstra_path(graph, n1, n2)  # shortest path (hops) between nodes of candidate contracted edge
-            sp = [n for n in sp if n in keep_nodes]  # remove simple road extenders
-
-            # if n1 and n2 are adjacent after removing the degree-2 (simple road extender) nodes, save the edge
-            if len(sp) == 2:
-                spl = nx.shortest_path_length(graph, n1, n2, edge_weight)
-                contracted_edges.append(tuple(sorted(sp)) + (spl,))
-
-    return set(contracted_edges)
-
-
 def create_deduped_state_road_graph(graph_st, comps_dict, remove_comp_ids):
     """
     Creates a single graph with all state roads deduped of parallel one way roads with the same name
@@ -449,6 +415,40 @@ def create_deduped_state_road_graph(graph_st, comps_dict, remove_comp_ids):
     return graph_st_deduped
 
 
+# TODO: implement smarter handling of degree 2 nodes that form a loop w only one node w degree > 2.
+def contract_edges(graph, edge_weight='weight'):
+    """
+    Given a graph, contract edges into a list of contracted edges.  Nodes with degree 2 are collapsed into an edge
+    stretching from a dead-end node (degree 1) or intersection (degree >= 3) to another like node.
+
+    Args:
+        graph (networkx graph):
+        edge_weight (str): edge weight attribute to us for shortest path calculations
+
+    Returns:
+        List of tuples representing contracted edges
+    """
+
+    # keep nodes represent dead-ends (degree 1) or intersections w > 2 nodes.
+    keep_nodes = [n for n in graph.nodes() if graph.degree(n) != 2]
+    contracted_edges = []
+
+    for n1 in keep_nodes:
+        for n2 in set(keep_nodes) - {n1}:
+            if {n1, n2} in [{x[0], x[1]} for x in contracted_edges]:
+                continue
+            graph_adj_only = graph.copy()
+            graph_adj_only.remove_nodes_from(set(keep_nodes) - {n1, n2})
+            try:
+                sp = nx.dijkstra_path(graph_adj_only, n1, n2)  # shortest path (hops) between adjacent keep_nodes
+                sp_full_edges = list(zip(sp[:-1], sp[1:]))  # granular edges between keep_nodes
+                spl = sum([graph[e[0]][e[1]][edge_weight] for e in sp_full_edges])  # distance
+                contracted_edges.append(tuple(sorted([n1, n2])) + (spl,) + (sp,))
+            except nx.NetworkXNoPath:
+                continue  # n1 and n2 are not adjacent nodes (after removing degree-2 nodes), skipping ahead.
+    return contracted_edges
+
+
 def create_contracted_edge_graph(graph, edge_weight):
     """
     Creates a fresh graph with contracted edges only.
@@ -464,7 +464,7 @@ def create_contracted_edge_graph(graph, edge_weight):
     graph_contracted = nx.Graph()
     for i, comp in enumerate(nx.connected_component_subgraphs(graph)):
         for cc in contract_edges(comp, edge_weight):
-            start_node, end_node, distance = cc
+            start_node, end_node, distance, path = cc
             street_name = list(comp.edges(data=True))[0][2]['name']  # grabbing arbitrary first row
 
             contracted_edge = {
@@ -474,7 +474,7 @@ def create_contracted_edge_graph(graph, edge_weight):
                 'name': street_name,
                 'comp': i,
                 'required': 1,
-                'path': nx.dijkstra_path(graph, start_node, end_node, edge_weight)
+                'path': path
             }
 
             graph_contracted.add_edge(start_node, end_node, **contracted_edge)
