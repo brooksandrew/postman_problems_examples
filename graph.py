@@ -20,8 +20,11 @@ def states_to_state_avenue_name(state_list):
         list of state avenue names w quadrant
     """
     state_avenue = ['{} Avenue'.format(state) for state in state_list]
-    quadrant = ['Southeast', 'Southwest', 'Northeast', 'Northwest']
-    state_avenue_quadrant = ['{} {}'.format(state_ave, quad) for state_ave in state_avenue for quad in quadrant]
+    st_types = ['Ave', 'Avenue']
+
+    # most OSM edges use the long form name, but some use the short form abbreviation.
+    quadrant = ['Southeast', 'Southwest', 'Northeast', 'Northwest', 'SE', 'SW', 'NE', 'NW']
+    state_avenue_quadrant = ['{} {} {}'.format(state, st, quad) for state in state_list for st in st_types for quad in quadrant]
     return state_avenue_quadrant
 
 
