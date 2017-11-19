@@ -21,7 +21,8 @@ The optimal route covers 160 miles: 124 miles of required road and 36 miles of o
 
 Here's a map:
 
-<script src="https://embed.githubusercontent.com/view/geojson/brooksandrew/50states/master/rpp_solution.geojson"></script>
+<iframe height="420" width="620" frameborder="0" src="https://render.githubusercontent.com/view/geojson?url=https://raw.githubusercontent.com/brooksandrew/50states/master/rpp_solution.geojson"></iframe>
+
 
 ## Contents
 
