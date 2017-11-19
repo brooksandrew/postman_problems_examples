@@ -19,10 +19,8 @@ Derived from Open Street Maps data.  Edges are contracted to ease computation.  
 
 The optimal route covers 160 miles: 124 miles of required road and 36 miles of optional roads and doublebacking.
 
-Here's a map:
+[Here][rpp_solution.geojson] is the route:
 
-
-<iframe src="https://cdn.rawgit.com/brooksandrew/50states/master/rpp_solution.geojson"></iframe>
 
 
 ## Contents
@@ -39,6 +37,7 @@ Here's a map:
 - [Blog post: Intro to Graph Optimization]: Same post as above, but modified for Networkx 2.0 
 
 
+[rpp_solution.geojson]: https://github.com/brooksandrew/50states/blob/master/rpp_solution.geojson
 [postman_problems]: https://github.com/brooksandrew/postman_problems
 []:http://brooksandrew.github.io/simpleblog/articles/intro-to-graph-optimization-solving-cpp/
 
