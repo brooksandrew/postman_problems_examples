@@ -50,4 +50,4 @@ See the [blog post][rpp_blog_post] for more visualizations and details on the ap
 [Blog post: DataCamp]: https://www.datacamp.com/community/tutorials/networkx-python-graph-tutorial
 [Blog post: Intro to Graph Optimization]: http://brooksandrew.github.io/simpleblog/articles/intro-to-graph-optimization-solving-cpp/
 
-[rpp_blog_post]: http://brooksandrew.github.io/simpleblog/fifty-states-rural-postman-problem/
+[rpp_blog_post]: http://brooksandrew.github.io/simpleblog/articles/fifty-states-rural-postman-problem/
