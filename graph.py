@@ -402,7 +402,7 @@ def create_deduped_state_road_graph(graph_st, comps_dict, remove_comp_ids):
 
     graph_st_deduped = graph_st.copy()
 
-    # actually remove dupe oneway edges from g_st
+    # actually remove dupe one-way edges from g_st
     comps2remove = list(itertools.chain(*remove_comp_ids.values()))
     for cid in comps2remove:
         comp = comps_dict[cid]
@@ -432,23 +432,28 @@ def contract_edges(graph, edge_weight='weight'):
         List of tuples representing contracted edges
     """
 
-    # keep nodes represent dead-ends (degree 1) or intersections w > 2 nodes.
     keep_nodes = [n for n in graph.nodes() if graph.degree(n) != 2]
     contracted_edges = []
 
-    for n1 in keep_nodes:
-        for n2 in set(keep_nodes) - {n1}:
-            if {n1, n2} in [{x[0], x[1]} for x in contracted_edges]:
-                continue
-            graph_adj_only = graph.copy()
-            graph_adj_only.remove_nodes_from(set(keep_nodes) - {n1, n2})
-            try:
-                sp = nx.dijkstra_path(graph_adj_only, n1, n2)  # shortest path (hops) between adjacent keep_nodes
-                sp_full_edges = list(zip(sp[:-1], sp[1:]))  # granular edges between keep_nodes
-                spl = sum([graph[e[0]][e[1]][edge_weight] for e in sp_full_edges])  # distance
-                contracted_edges.append(tuple(sorted([n1, n2])) + (spl,) + (sp,))
-            except nx.NetworkXNoPath:
-                continue  # n1 and n2 are not adjacent nodes (after removing degree-2 nodes), skipping ahead.
+    for n in keep_nodes:
+        for nn in nx.neighbors(graph, n):
+
+            nn_hood = set(nx.neighbors(graph, nn)) - {n}
+            path = [n, nn]
+
+            if len(nn_hood) == 1:
+                while len(nn_hood) == 1:
+                    nnn = list(nn_hood)[0]
+                    nn_hood = set(nx.neighbors(graph, nnn)) - {path[-1]}
+                    path += [nnn]
+
+            full_edges = list(zip(path[:-1], path[1:]))  # granular edges between keep_nodes
+            spl = sum([graph[e[0]][e[1]][edge_weight] for e in full_edges])  # distance
+
+            # only keep if path is unique.  Parallel/Multi edges allowed, but not those that are completely redundant.
+            if (not contracted_edges) | ([set(path)] not in [[set(p[3])] for p in contracted_edges]):
+                contracted_edges.append(tuple(sorted([n, path[-1]])) + (spl,) + (path,))
+
     return contracted_edges
 
 
@@ -464,7 +469,7 @@ def create_contracted_edge_graph(graph, edge_weight):
         networkx graph with contracted edges and nodes only
     """
 
-    graph_contracted = nx.Graph()
+    graph_contracted = nx.MultiGraph()
     for i, comp in enumerate(nx.connected_component_subgraphs(graph)):
         for cc in contract_edges(comp, edge_weight):
             start_node, end_node, distance, path = cc
@@ -610,22 +615,32 @@ def create_rpp_edgelist(g_st_contracted, graph_full, edge_weight='distance', max
         if n1 == n2:
             continue
 
-        distance_haversine = haversine(g_st_contracted.node[n1]['lon'], g_st_contracted.node[n1]['lat'],
-                                       g_st_contracted.node[n2]['lon'], g_st_contracted.node[n2]['lat'])
-        required = 1 if g_st_contracted.has_edge(n1, n2) else 0
+        if g_st_contracted.has_edge(n1, n2):
+            for k, e in g_st_contracted[n1][n2].items():
+                dfrpp_list.append({
+                    'start_node': n1,
+                    'end_node': n2,
+                    'distance_haversine': e['distance'],
+                    'required': 1,
+                    'distance': e['distance'],
+                    'path': e['path']
+                })
+        else:
+            distance_haversine = haversine(g_st_contracted.node[n1]['lon'], g_st_contracted.node[n1]['lat'],
+                                           g_st_contracted.node[n2]['lon'], g_st_contracted.node[n2]['lat'])
 
-        # only add optional edges whose haversine distance is less than `max_distance`
-        if (distance_haversine > max_distance) and (required == 0):
-            continue
+            # only add optional edges whose haversine distance is less than `max_distance`
+            if distance_haversine > max_distance:
+                continue
 
-        dfrpp_list.append({
-            'start_node': n1,
-            'end_node': n2,
-            'distance_haversine': distance_haversine,
-            'required': required,
-            'distance': g_st_contracted[n1][n2]['distance'] if required else nx.dijkstra_path_length(graph_full, n1, n2, edge_weight),
-            'path': g_st_contracted[n1][n2]['path'] if required else nx.dijkstra_path(graph_full, n1, n2, edge_weight)
-        })
+            dfrpp_list.append({
+                'start_node': n1,
+                'end_node': n2,
+                'distance_haversine': distance_haversine,
+                'required': 0,
+                'distance': nx.dijkstra_path_length(graph_full, n1, n2, edge_weight),
+                'path': nx.dijkstra_path(graph_full, n1, n2, edge_weight)
+            })
 
     # create dataframe
     dfrpp = pd.DataFrame(dfrpp_list)
