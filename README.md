@@ -2,16 +2,16 @@
 
 ## Summary 
 
-Side projects solving applications of the Rural Postman Problem using the [postman_problems] library.  Current examples include:
+Side projects solving applications of the Rural Postman Problem using the [postman_problems] library.  Current examples leverage OSM (Open Street Maps) for building, optimizing and visualizing graphs.  Examples include: 
 
-1. 50 States Ride:  Required edges are the state named avenues in DC.  Optional edges are all others roads and trails.  Many more details in the 
+1. **50 States Ride**:  Required edges are the state named avenues in DC.  Optional edges are all others roads and trails.  Many more details in the 
 accompanying blog post [here][rpp_blog_post].
 
-2. Sleeping Giant: Required edges are the named trails in Sleeping Giant State Park (see [Giant master program]).  Optional edges are the non-required trails and roads.
+2. **Sleeping Giant**: Required edges are the named trails in Sleeping Giant State Park (see [Giant master program]).  Optional edges are the non-required trails and roads.
 
 ## 1. 50 States Ride
 
-### Graph
+#### Graph
 
 Derived from Open Street Maps data.  Edges are contracted to ease computation.  There are ~400 required edges in the final edgelist.
 
@@ -19,7 +19,7 @@ Derived from Open Street Maps data.  Edges are contracted to ease computation.  
 - connectors between required components: **12 miles**
 
 
-### Solution
+#### Solution
 
 The optimal route covers 160 miles: 124 miles of required road and 36 miles of optional roads and doublebacking.
 
@@ -37,25 +37,25 @@ See the [blog post][rpp_blog_post] for more visualizations and details on the ap
 - `rpp_solution.csv`: eulerian circuit solution solution to RPP
 
 
-## Sleeping Giant
+## 2. Sleeping Giant
 
-### Graph 
+#### Graph 
  
 For more details on the Sleeping Giant problem and graph, check out the original blogpost [here][Blog post: Intro to Graph Optimization]. 
  
-### Solution
+#### Solution
 
 The optimal route covers 30.7 miles: 25.6 of required trails and 5.1 miles of optional trails and doublebacking.
 
 
 ## Project
 
-### Contents
+#### Contents
 
 - `environment.yml`: environment used to produce `50states-blogpost.ipynb`. 
 - `graph.py`: module consolidating heavy lifting for blog post
 
-### Resources
+#### Resources
 
 - [postman_problems]: Python package with RPP and CPP solvers
 - [Blog post: 50 stats RPP][rpp_blog_post]: solving and visualizing RPP with Leaflet using DC OSM data
