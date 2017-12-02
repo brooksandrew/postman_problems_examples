@@ -7,7 +7,7 @@ Side projects solving applications of the Rural Postman Problem using the [postm
 1. **50 States Ride**:  Required edges are the state named avenues in DC.  Optional edges are all others roads and trails.  Many more details in the 
 accompanying blog post [here][rpp_blog_post].
 
-2. **Sleeping Giant**: Required edges are the named trails in Sleeping Giant State Park (see [Giant master program]).  Optional edges are the non-required trails and roads.
+2. **Sleeping Giant**: Required edges are the named trails in Sleeping Giant State Park (see [Giant master program]).  Optional edges are the non-required trails and roads.  More examples in the accompanying blog post [here][rpp_sg_osm_blogpost].
 
 ## 1. 50 States Ride
 
@@ -31,17 +31,20 @@ See the [blog post][rpp_blog_post] for more visualizations and details on the ap
 
 
 
-### Contents
+#### Contents
 
-- `50states-blogpost.ipynb`: notebook solving and visualizing the problem 
-- `rpp_solution.csv`: eulerian circuit solution solution to RPP
+- `50states/50states-blogpost.ipynb`: notebook solving and visualizing the problem 
+- `50states/rpp_solution.csv`: eulerian circuit solution solution to RPP
 
 
 ## 2. Sleeping Giant
 
 #### Graph 
  
-For more details on the Sleeping Giant problem and graph, check out the original blogpost [here][Blog post: Intro to Graph Optimization]. 
+For more details on the Sleeping Giant problem and graph, check out the blog post [here][rpp_sg_osm_blogpost].  
+ 
+ 
+ ![pic](https://github.com/brooksandrew/simpleblog/raw/gh-pages/images/feature-2017-12-01-sleepinggiant.png)
  
 #### Solution
 
@@ -58,7 +61,8 @@ The optimal route covers 30.7 miles: 25.6 of required trails and 5.1 miles of op
 #### Resources
 
 - [postman_problems]: Python package with RPP and CPP solvers
-- [Blog post: 50 stats RPP][rpp_blog_post]: solving and visualizing RPP with Leaflet using DC OSM data
+- [Blog post: 50 states RPP][rpp_blog_post]: solving and visualizing RPP with Leaflet using DC OSM data
+- [Blog post: Sleeping Giant RPP][rpp_sg_osm_blogpost]: solving and visualizing RPP with Leaflet using OSM data.
 - [Blog post: DataCamp]: Original blog post implementing CPP from scratch using Networkx 1.11
 - [Blog post: Intro to Graph Optimization]: Same post as above, but modified for Networkx 2.0 
 
@@ -73,3 +77,5 @@ The optimal route covers 30.7 miles: 25.6 of required trails and 5.1 miles of op
 
 [rpp_blog_post]: http://brooksandrew.github.io/simpleblog/articles/fifty-states-rural-postman-problem/
 [Giant master program]: http://www.sgpa.org/hikes/masters.html
+[rpp_sg_osm_blogpost]: http://brooksandrew.github.io/simpleblog/articles/sleeping-giant-rural-postman-problem/
+
