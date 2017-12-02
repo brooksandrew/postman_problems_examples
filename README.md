@@ -29,6 +29,7 @@ See the [blog post][rpp_blog_post] for more visualizations and details on the ap
 
 [Here][rpp_50states_solution_csv] is the solution edgelist CSV with lat and lon and street names.
 
+![pic](https://github.com/brooksandrew/postman_problems_examples/raw/master/50states/fig/50states_rpp_solution_edge_cnt.png)
 
 
 #### Contents
@@ -44,11 +45,11 @@ See the [blog post][rpp_blog_post] for more visualizations and details on the ap
 For more details on the Sleeping Giant problem and graph, check out the blog post [here][rpp_sg_osm_blogpost].  
  
  
- ![pic](https://github.com/brooksandrew/simpleblog/raw/gh-pages/images/feature-2017-12-01-sleepinggiant.png)
- 
 #### Solution
 
 The optimal route covers 30.7 miles: 25.6 of required trails and 5.1 miles of optional trails and doublebacking.
+
+ ![pic](https://github.com/brooksandrew/postman_problems_examples/raw/master/sleepinggiant/fig/sleepinggiant_rpp_solution_edge_cnt.png)
 
 
 ## Project
