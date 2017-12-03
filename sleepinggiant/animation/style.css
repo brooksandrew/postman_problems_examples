@@ -1,0 +1,45 @@
+html,
+body {
+    height: 100%;
+    width: 100%;
+}
+body {
+    margin: 0;
+}
+#map {
+    width: 100%;
+    height: 100%;
+}
+svg {
+    position: relative;
+}
+path {
+    /*fill: yellow;*/
+    stroke-width: 2px;
+    stroke: red;
+    stroke-opacity: 1;
+}
+.travelMarker {
+    fill: red;
+    opacity: 0.75;
+}
+.waypoints {
+    /*fill: yellow;*/
+    opacity: 0;
+  /*}*/
+}
+.drinks {
+  stroke: black;
+  fill: red;
+}
+.lineConnect {
+  fill: none;
+  /*stroke: yellow;*/
+  opacity: 1;
+}
+.locnames {
+  fill: black;
+  text-shadow: 1px 1px 1px #FFF, 3px 3px 5px #000;
+  font-weight: bold;
+  font-size: 13px;
+}
