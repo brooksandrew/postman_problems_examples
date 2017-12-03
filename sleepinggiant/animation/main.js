@@ -1,9 +1,16 @@
+/*
+
+made based on tutorial by ZevRoss
+http://zevross.com/blog/2014/09/30/use-the-amazing-d3-library-to-animate-a-path-on-a-leaflet-map/
+
+*/
+
+
 var token = 'pk.eyJ1IjoibGF1cmEzNzYiLCJhIjoiY2o5dnM2M2htMXB1ejJwcG94NXdpbm5qaSJ9.vcrHmCTIsE7wdBIksd2WTQ';
 var mapId = 'mapbox.mapbox-streets-v7';
 var style = 'mapbox://styles/mapbox/outdoors-v9';
 var geoData = 'https://gist.githubusercontent.com/brooksandrew/c71508bcf67335df1c379ac7decec2e7/raw/fe6a7cf6579376c2e8696c3876b1fd9637438d2d/sleeping_giant_osm_rpp.geojson';
 
-console.log('in main.js');
 
 var tileLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{mapId}/{z}/{x}/{y}.png?access_token={token}', {
   attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
@@ -47,7 +54,6 @@ var svg = d3.select(map.getPanes().overlayPane).append("svg");
 var g = svg.append("g").attr("class", "leaflet-zoom-hide");
 
 d3.json(geoData, function(collection){
-  console.log('collection', collection);
 
   // transform geojson to path
   var transform = d3.geo.transform({
@@ -109,7 +115,6 @@ d3.json(geoData, function(collection){
       .style("opacity", 0); // change opacitiy to 1 to see all point color coded
 
   var originANDdestination = [collection.features[0], collection.features[collection.features.length - 1]];
-  console.log(originANDdestination);
   var begend = g.selectAll(".drinks")
       .data(originANDdestination)
       .enter()
@@ -128,7 +133,8 @@ d3.json(geoData, function(collection){
       var bounds = d3path.bounds(collection),
           topLeft = bounds[0],
           bottomRight = bounds[1];
-      console.log(bounds);
+      // console.log(bounds);
+
       // here you're setting some styles, width, heigh etc
       // to the SVG. Note that we're adding a little height and
       // width because otherwise the bounding box would perfectly
@@ -158,7 +164,6 @@ d3.json(geoData, function(collection){
       //  harding coding the starting point
       marker.attr("transform",
           function() {
-            console.log('inside marker.attr("tranform") function');
             var y = collection.features[0].geometry.coordinates[1]
             var x = collection.features[0].geometry.coordinates[0]
             return "translate(" +
@@ -194,14 +199,12 @@ d3.json(geoData, function(collection){
   // on. The values themselves ("0,500", "1,500" etc) are being
   // fed to the attrTween operator
   function transition() {
-    console.log('in transition function');
     linePath.transition()
       .duration(50000)
       .ease('linear')
       .attrTween("stroke-dasharray", tweenDash)
       .each("end", function() {
-        console.log('calling transition again');
-        console.log(this);
+        // console.log(this);
         d3.select(this).call(transition);// infinite loop
       });
   } //end transition
@@ -213,8 +216,8 @@ d3.json(geoData, function(collection){
   // stroke and dash lengths
   function tweenDash() {
       return function(t) {
-        console.log("linePath", linePath);
-        console.log("linePath.node()", linePath.node());
+        // console.log("linePath", linePath);
+        // console.log("linePath.node()", linePath.node());
         //total length of path (single value)
         var l = linePath.node().getTotalLength();
 
