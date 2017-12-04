@@ -22,7 +22,7 @@ var tileLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{mapId}/{z}/{x}/{y}
 var map = L.map('map')
   // .addLayer(style)
   .addLayer(tileLayer)
-  .setView([41.431341, -72.88], 15);
+  .setView([41.431341, -72.88], 16);
 
 
 map.on('load', function () {
