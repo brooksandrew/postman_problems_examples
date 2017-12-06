@@ -7,7 +7,7 @@ http://zevross.com/blog/2014/09/30/use-the-amazing-d3-library-to-animate-a-path-
 
 
 var token = 'pk.eyJ1IjoibGF1cmEzNzYiLCJhIjoiY2o5dnM2M2htMXB1ejJwcG94NXdpbm5qaSJ9.vcrHmCTIsE7wdBIksd2WTQ';
-var mapId = 'mapbox.mapbox-traffic-v1';
+var mapId = 'mapbox.mapbox-streets-v7';
 //var style = 'mapbox://styles/mapbox/outdoors-v9';
 var geoData = 'https://gist.githubusercontent.com/brooksandrew/c71508bcf67335df1c379ac7decec2e7/raw/fe6a7cf6579376c2e8696c3876b1fd9637438d2d/sleeping_giant_osm_rpp.geojson';
 
