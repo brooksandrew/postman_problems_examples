@@ -6,12 +6,11 @@ http://zevross.com/blog/2014/09/30/use-the-amazing-d3-library-to-animate-a-path-
 */
 
 
-var token = 'pk.eyJ1IjoibGF1cmEzNzYiLCJhIjoiY2o5dnM2M2htMXB1ejJwcG94NXdpbm5qaSJ9.vcrHmCTIsE7wdBIksd2WTQ';
-var mapId = 'mapbox.mapbox-streets-v7';
-//var style = 'mapbox://styles/mapbox/outdoors-v9';
-var geoData = 'https://gist.githubusercontent.com/brooksandrew/c71508bcf67335df1c379ac7decec2e7/raw/fe6a7cf6579376c2e8696c3876b1fd9637438d2d/sleeping_giant_osm_rpp.geojson';
+var token = 'pk.eyJ1IjoiYWpiMDczIiwiYSI6ImNqYXJrbzBrazRpYTcyd3BkMnZuaHpsbXEifQ.1NPNB7qGr_bSI6LCK68NVw'
+var mapId = 'mapbox.dc-nightvision' //'mapbox.dc-bright'
+var geoData = 'https://gist.githubusercontent.com/brooksandrew/161aeae05a8056ab8820934d0395511b/raw/7680bb53ece4bfee2f20624cb2c2273905f0df87/50states_rpp.geojson';
 
-var tileLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{mapId}/{z}/{x}/{y}.png?access_token={token}', {
+var tileLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v3/{mapId}/{z}/{x}/{y}.png?access_token={token}', {
   attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
   subdomains: ['a','b', 'c', 'd'],
   mapId: mapId,
@@ -19,10 +18,9 @@ var tileLayer = L.tileLayer('https://{s}.tiles.mapbox.com/v4/{mapId}/{z}/{x}/{y}
 });
 
 var map = L.map('map')
-  //.addLayer(style)
-  .addLayer(tileLayer)
-  .setView([41.431341, -72.88], 14);
 
+  .addLayer(tileLayer)
+  .setView([38.9103218, -77.0428087], 13);
 
 map.on('load', function () {
 
@@ -90,17 +88,19 @@ d3.json(geoData, function(collection){
   // This will be our traveling circle it will
   // travel along our path
   var marker = g.append("circle")
-      .attr("r", 3)
-      // .attr("r", 10)
+      .attr("r", 5)
       .attr("id", "marker")
-      .attr("class", "travelMarker");
+      .attr("class", "travelMarker")
+      .style('fill', 'firebrick')
+      .style('opacity', 1)
+
 
   // hidden waypoints
   var ptFeatures = g.selectAll("circle")
       .data(collection.features)
       .enter()
       .append("circle")
-      .attr("r", 3)
+      .attr("r", 2)
       .attr("class", function(d) {
         return "waypoints" + "c" + d.properties.time
       })
@@ -111,16 +111,17 @@ d3.json(geoData, function(collection){
         // console.log(d.properties.color);
         return d.properties.color;
       })
-      .style("opacity", 0); // change opacitiy to 1 to see all point color coded
+      .style("opacity",0) // change opacitiy to 1 to see all point color coded
+      .style('fill', 'white');
 
   var originANDdestination = [collection.features[0], collection.features[collection.features.length - 1]];
   var begend = g.selectAll(".drinks")
       .data(originANDdestination)
       .enter()
       .append("circle", ".drinks")
-      .attr("r", 5)
+      .attr("r", 40)
       .style("fill", "red")
-      .style("opacity", "1");
+      .style("opacity", "0");
 
   map.on("viewreset", reset);
 
@@ -179,10 +180,10 @@ d3.json(geoData, function(collection){
 
       linePath.attr("d", toLine)
         .style("stroke", 'yellow') // THIS IS WHERE TO CHANGE PATH COLOR --- NEED TO ACCESS GEOJSON
-        .style("opacity", '0.5')
+        .style("opacity", '0.6')
+        .style('stroke-width', 3)
 
-
-      // ptPath.attr("d", d3path);
+       //ptPath.attr("d", d3path);
       g.attr("transform", "translate(" + (-topLeft[0] + 50) + "," + (-topLeft[1] + 50) + ")");
   } // end reset
 
@@ -199,7 +200,7 @@ d3.json(geoData, function(collection){
   // fed to the attrTween operator
   function transition() {
     linePath.transition()
-      .duration(50000)
+      .duration(180000)
       .ease('linear')
       .attrTween("stroke-dasharray", tweenDash)
       .each("end", function() {
